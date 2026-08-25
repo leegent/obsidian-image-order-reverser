@@ -6,6 +6,7 @@ A focused Obsidian plugin that reverses every image embed in the active Markdown
 - Preserves all surrounding text, whitespace, tables, callouts, image sizes, alt text, titles, and hyperlinks.
 - Ignores frontmatter, code, comments, HTML, unresolved embeds, and non-image files.
 - Works on desktop and mobile without accounts, network access, telemetry, or settings.
+- Automatically uses Chinese when Obsidian's interface language is Chinese, and English otherwise.
 
 ## English usage
 
@@ -18,11 +19,13 @@ Use the ribbon button, choose **Reverse image order** from the active note's thr
 ### 使用方式
 
 - 点击左侧边栏的图片按钮；或
-- 打开当前文档右上角的三个点菜单，选择 “Reverse image order”；或
-- 打开命令面板，运行 “Reverse image order in active note”；或
+- 打开当前文档右上角的三个点菜单，选择“反转图片顺序”；或
+- 打开命令面板，运行“反转当前文档中的图片顺序”；或
 - 在 Obsidian 的快捷键设置中为该命令绑定快捷键。
 
 每次操作都是一次原子编辑，因此也可以使用 Obsidian 自带的撤销功能恢复。
+
+插件自动跟随 Obsidian 的界面语言：中文界面显示中文，其他语言显示英文。
 
 ### 支持范围
 

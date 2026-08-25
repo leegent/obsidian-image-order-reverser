@@ -1,4 +1,5 @@
-import { MarkdownView, Notice, Plugin, TFile } from "obsidian";
+import { getLanguage, MarkdownView, Notice, Plugin, TFile } from "obsidian";
+import { getCopy } from "./i18n";
 import { reverseImages } from "./reverse-images";
 
 const IMAGE_EXTENSIONS = new Set([
@@ -14,18 +15,17 @@ const IMAGE_EXTENSIONS = new Set([
 
 export default class ImageOrderReverserPlugin extends Plugin {
   async onload(): Promise<void> {
-    this.addRibbonIcon("images", "Reverse image order in active note", () => {
-      this.reverseActiveNote();
+    const copy = getCopy(getLanguage());
+
+    this.addRibbonIcon("images", copy.ribbonTitle, () => {
+      void this.reverseActiveNote();
     });
 
     this.addCommand({
       id: "reverse-images-in-active-note",
-      name: "Reverse image order in active note",
-      checkCallback: (checking) => {
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!view?.file) return false;
-        if (!checking) this.reverseActiveNote(view);
-        return true;
+      name: copy.commandName,
+      callback: () => {
+        void this.reverseActiveNote();
       }
     });
 
@@ -41,15 +41,15 @@ export default class ImageOrderReverserPlugin extends Plugin {
 
         menu.addItem((item) => {
           item
-            .setTitle("Reverse image order")
+            .setTitle(copy.menuTitle)
             .setIcon("images")
             .setSection("action")
             .onClick(() => {
               const view = leaf?.view;
               if (view instanceof MarkdownView && view.file?.path === file.path) {
-                this.reverseActiveNote(view);
+                void this.reverseActiveNote(view);
               } else {
-                this.reverseActiveNote();
+                void this.reverseActiveNote();
               }
             });
         });
@@ -57,33 +57,84 @@ export default class ImageOrderReverserPlugin extends Plugin {
     );
   }
 
-  private reverseActiveNote(existingView?: MarkdownView): void {
-    const view = existingView ?? this.app.workspace.getActiveViewOfType(MarkdownView);
+  private async reverseActiveNote(existingView?: MarkdownView): Promise<void> {
+    const copy = getCopy(getLanguage());
+    const view = existingView ?? this.findActiveMarkdownView();
     const sourceFile = view?.file;
     if (!view || !sourceFile) {
-      new Notice("请先打开一个 Markdown 文档");
+      new Notice(copy.openMarkdown);
       return;
     }
 
-    const source = view.editor.getValue();
-    const result = reverseImages(source, (linkTarget) =>
-      this.isResolvedWikiImage(linkTarget, sourceFile)
-    );
+    const reverse = (source: string) =>
+      reverseImages(source, (linkTarget) =>
+        this.isResolvedWikiImage(linkTarget, sourceFile)
+      );
 
-    if (result.count < 2) {
-      new Notice(result.count === 0 ? "当前文档中没有可反转的图片" : "至少需要两张图片才能反转");
-      return;
+    try {
+      if (view.getMode() === "preview") {
+        let imageCount = 0;
+        await this.app.vault.process(sourceFile, (source) => {
+          const result = reverse(source);
+          imageCount = result.count;
+          return result.count >= 2 ? result.text : source;
+        });
+
+        if (imageCount < 2) {
+          new Notice(imageCount === 0 ? copy.noImages : copy.needTwoImages);
+          return;
+        }
+
+        new Notice(copy.reversed(imageCount));
+        return;
+      }
+
+      const source = view.editor.getValue();
+      const result = reverse(source);
+      if (result.count < 2) {
+        new Notice(result.count === 0 ? copy.noImages : copy.needTwoImages);
+        return;
+      }
+
+      view.editor.transaction({
+        changes: result.units.map((unit, index) => ({
+          from: view.editor.offsetToPos(unit.start),
+          to: view.editor.offsetToPos(unit.end),
+          text: result.replacements[index]
+        }))
+      });
+
+      new Notice(copy.reversed(result.count));
+    } catch (error) {
+      console.error("Image Order Reverser failed to update the note", error);
+      new Notice(copy.writeFailed);
+    }
+  }
+
+  private findActiveMarkdownView(): MarkdownView | null {
+    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    const activeFile = this.app.workspace.getActiveFile();
+    if (
+      activeView?.file &&
+      (!activeFile || activeView.file.path === activeFile.path)
+    ) {
+      return activeView;
     }
 
-    view.editor.transaction({
-      changes: result.units.map((unit, index) => ({
-        from: view.editor.offsetToPos(unit.start),
-        to: view.editor.offsetToPos(unit.end),
-        text: result.replacements[index]
-      }))
+    if (!activeFile || activeFile.extension !== "md") return null;
+
+    let matchingView: MarkdownView | null = null;
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      const view = leaf.view;
+      if (
+        !matchingView &&
+        view instanceof MarkdownView &&
+        view.file?.path === activeFile.path
+      ) {
+        matchingView = view;
+      }
     });
-
-    new Notice(`已反转 ${result.count} 张图片`);
+    return matchingView;
   }
 
   private isResolvedWikiImage(linkTarget: string, sourceFile: TFile): boolean {
