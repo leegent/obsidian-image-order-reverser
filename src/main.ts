@@ -28,6 +28,33 @@ export default class ImageOrderReverserPlugin extends Plugin {
         return true;
       }
     });
+
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
+        if (
+          source !== "more-options" ||
+          !(file instanceof TFile) ||
+          file.extension !== "md"
+        ) {
+          return;
+        }
+
+        menu.addItem((item) => {
+          item
+            .setTitle("Reverse image order")
+            .setIcon("images")
+            .setSection("action")
+            .onClick(() => {
+              const view = leaf?.view;
+              if (view instanceof MarkdownView && view.file?.path === file.path) {
+                this.reverseActiveNote(view);
+              } else {
+                this.reverseActiveNote();
+              }
+            });
+        });
+      })
+    );
   }
 
   private reverseActiveNote(existingView?: MarkdownView): void {

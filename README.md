@@ -9,7 +9,7 @@ A focused Obsidian plugin that reverses every image embed in the active Markdown
 
 ## English usage
 
-Use the ribbon button or run **Reverse image order in the active note** from the command palette. You can assign a keyboard shortcut in Obsidian settings. Each run is one atomic editor change, so both clicking again and Obsidian's native undo restore the original order.
+Use the ribbon button, choose **Reverse image order** from the active note's three-dot menu, or run **Reverse image order in the active note** from the command palette. You can assign a keyboard shortcut in Obsidian settings. Each run is one atomic editor change, so both clicking again and Obsidian's native undo restore the original order.
 
 ## 中文说明
 
@@ -18,6 +18,7 @@ Use the ribbon button or run **Reverse image order in the active note** from the
 ### 使用方式
 
 - 点击左侧边栏的图片按钮；或
+- 打开当前文档右上角的三个点菜单，选择 “Reverse image order”；或
 - 打开命令面板，运行 “Reverse image order in active note”；或
 - 在 Obsidian 的快捷键设置中为该命令绑定快捷键。
 
