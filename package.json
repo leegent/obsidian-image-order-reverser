@@ -1,6 +1,6 @@
 {
   "name": "obsidian-image-order-reverser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "main.js",
   "private": true,
   "description": "Reverse every image embed in the active Obsidian note with one click.",
@@ -23,7 +23,6 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
-    "builtin-modules": "^5.0.0",
     "esbuild": "^0.25.9",
     "obsidian": "^1.8.7",
     "tslib": "^2.8.1",
