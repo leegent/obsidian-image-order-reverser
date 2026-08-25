@@ -1,0 +1,51 @@
+name: Publish 0.1.1 release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-0.1.1.yml"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "bc7cf7acc4dfec97395083210456ccee24c3227c"
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test and build plugin
+        run: |
+          npm test
+          npm run build
+
+      - name: Generate artifact attestation
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "0.1.1" \
+            --target "bc7cf7acc4dfec97395083210456ccee24c3227c" \
+            --title "0.1.1" \
+            --notes "Remove an unused deprecated build dependency. Plugin behavior is unchanged." \
+            main.js manifest.json
