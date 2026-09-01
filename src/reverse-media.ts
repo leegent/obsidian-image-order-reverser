@@ -1,6 +1,6 @@
-export type WikiImageResolver = (linkTarget: string) => boolean;
+export type WikiMediaResolver = (linkTarget: string) => boolean;
 
-export interface ImageUnit {
+export interface MediaUnit {
   start: number;
   end: number;
   text: string;
@@ -10,27 +10,27 @@ export interface ImageUnit {
 export interface ReverseResult {
   text: string;
   count: number;
-  units: ImageUnit[];
+  units: MediaUnit[];
   replacements: string[];
 }
 
-interface ParsedImage {
+interface ParsedMedia {
   start: number;
   end: number;
-  kind: ImageUnit["kind"];
+  kind: MediaUnit["kind"];
 }
 
 /**
- * Finds image embeds that are safe to move. YAML frontmatter, fenced code,
- * inline code, HTML comments, HTML images, malformed syntax, and escaped image
- * markers are deliberately ignored.
+ * Finds image and video embeds that are safe to move. YAML frontmatter,
+ * fenced code, inline code, HTML comments, HTML media, malformed syntax, and
+ * escaped embed markers are deliberately ignored.
  */
-export function findImageUnits(
+export function findMediaUnits(
   source: string,
-  isWikiImage: WikiImageResolver
-): ImageUnit[] {
+  isWikiMedia: WikiMediaResolver
+): MediaUnit[] {
   const excluded = buildExcludedMask(source);
-  const units: ImageUnit[] = [];
+  const units: MediaUnit[] = [];
 
   for (let index = 0; index < source.length; ) {
     if (excluded[index] || source[index] !== "!" || isEscaped(source, index)) {
@@ -38,19 +38,19 @@ export function findImageUnits(
       continue;
     }
 
-    let image: ParsedImage | null = null;
+    let media: ParsedMedia | null = null;
     if (source.startsWith("![[", index)) {
-      image = parseWikiImage(source, index, excluded, isWikiImage);
+      media = parseWikiMedia(source, index, excluded, isWikiMedia);
     } else if (source.startsWith("![", index)) {
-      image = parseMarkdownImage(source, index, excluded);
+      media = parseMarkdownImage(source, index, excluded);
     }
 
-    if (!image) {
+    if (!media) {
       index += 1;
       continue;
     }
 
-    const wrapped = expandLinkedImage(source, image, excluded);
+    const wrapped = expandLinkedMedia(source, media, excluded);
     units.push({
       ...wrapped,
       text: source.slice(wrapped.start, wrapped.end)
@@ -61,11 +61,11 @@ export function findImageUnits(
   return units;
 }
 
-export function reverseImages(
+export function reverseMedia(
   source: string,
-  isWikiImage: WikiImageResolver
+  isWikiMedia: WikiMediaResolver
 ): ReverseResult {
-  const units = findImageUnits(source, isWikiImage);
+  const units = findMediaUnits(source, isWikiMedia);
   const replacements = units.map((_, index) => units[units.length - 1 - index].text);
 
   if (units.length < 2) {
@@ -88,12 +88,12 @@ export function reverseImages(
   };
 }
 
-function parseWikiImage(
+function parseWikiMedia(
   source: string,
   start: number,
   excluded: Uint8Array,
-  isWikiImage: WikiImageResolver
-): ParsedImage | null {
+  isWikiMedia: WikiMediaResolver
+): ParsedMedia | null {
   const lineEnd = findLineEnd(source, start);
   let close = -1;
 
@@ -120,7 +120,7 @@ function parseWikiImage(
     : linkWithSubpath.slice(0, subpathIndex)
   ).trim();
 
-  if (!linkTarget || !isWikiImage(linkTarget)) return null;
+  if (!linkTarget || !isWikiMedia(linkTarget)) return null;
   return { start, end: close + 2, kind: "wiki" };
 }
 
@@ -128,7 +128,7 @@ function parseMarkdownImage(
   source: string,
   start: number,
   excluded: Uint8Array
-): ParsedImage | null {
+): ParsedMedia | null {
   const labelEnd = parseBracketed(source, start + 1, excluded);
   if (labelEnd < 0) return null;
 
@@ -145,35 +145,35 @@ function parseMarkdownImage(
   return { start, end, kind: "markdown" };
 }
 
-/** Include an immediately wrapping Markdown link so its destination follows the image. */
-function expandLinkedImage(
+/** Include an immediately wrapping Markdown link so its destination follows the media. */
+function expandLinkedMedia(
   source: string,
-  image: ParsedImage,
+  media: ParsedMedia,
   excluded: Uint8Array
-): ParsedImage {
-  const outerStart = image.start - 1;
+): ParsedMedia {
+  const outerStart = media.start - 1;
   if (
     outerStart < 0 ||
     source[outerStart] !== "[" ||
     isEscaped(source, outerStart) ||
-    source[image.end] !== "]" ||
+    source[media.end] !== "]" ||
     excluded[outerStart] ||
-    excluded[image.end]
+    excluded[media.end]
   ) {
-    return image;
+    return media;
   }
 
-  const suffixStart = image.end + 1;
+  const suffixStart = media.end + 1;
   let outerEnd = suffixStart;
   if (source[suffixStart] === "(") {
     outerEnd = parseParenthesized(source, suffixStart, excluded);
-    if (outerEnd < 0) return image;
+    if (outerEnd < 0) return media;
   } else if (source[suffixStart] === "[") {
     outerEnd = parseBracketed(source, suffixStart, excluded);
-    if (outerEnd < 0) return image;
+    if (outerEnd < 0) return media;
   }
 
-  return { ...image, start: outerStart, end: outerEnd };
+  return { ...media, start: outerStart, end: outerEnd };
 }
 
 /** Returns the position immediately after the matching closing bracket. */
@@ -382,4 +382,3 @@ function trimCarriageReturn(source: string, lineEnd: number): number {
 function mark(mask: Uint8Array, start: number, end: number): void {
   mask.fill(1, Math.max(0, start), Math.min(mask.length, end));
 }
-

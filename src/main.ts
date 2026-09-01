@@ -1,8 +1,8 @@
 import { getLanguage, MarkdownView, Notice, Plugin, TFile } from "obsidian";
 import { getCopy } from "./i18n";
-import { reverseImages } from "./reverse-images";
+import { reverseMedia } from "./reverse-media";
 
-const IMAGE_EXTENSIONS = new Set([
+const MEDIA_EXTENSIONS = new Set([
   "png",
   "jpg",
   "jpeg",
@@ -10,7 +10,12 @@ const IMAGE_EXTENSIONS = new Set([
   "webp",
   "svg",
   "bmp",
-  "avif"
+  "avif",
+  "mkv",
+  "mov",
+  "mp4",
+  "ogv",
+  "webm"
 ]);
 
 export default class ImageOrderReverserPlugin extends Plugin {
@@ -67,32 +72,32 @@ export default class ImageOrderReverserPlugin extends Plugin {
     }
 
     const reverse = (source: string) =>
-      reverseImages(source, (linkTarget) =>
-        this.isResolvedWikiImage(linkTarget, sourceFile)
+      reverseMedia(source, (linkTarget) =>
+        this.isResolvedWikiMedia(linkTarget, sourceFile)
       );
 
     try {
       if (view.getMode() === "preview") {
-        let imageCount = 0;
+        let mediaCount = 0;
         await this.app.vault.process(sourceFile, (source) => {
           const result = reverse(source);
-          imageCount = result.count;
+          mediaCount = result.count;
           return result.count >= 2 ? result.text : source;
         });
 
-        if (imageCount < 2) {
-          new Notice(imageCount === 0 ? copy.noImages : copy.needTwoImages);
+        if (mediaCount < 2) {
+          new Notice(mediaCount === 0 ? copy.noMedia : copy.needTwoMedia);
           return;
         }
 
-        new Notice(copy.reversed(imageCount));
+        new Notice(copy.reversed(mediaCount));
         return;
       }
 
       const source = view.editor.getValue();
       const result = reverse(source);
       if (result.count < 2) {
-        new Notice(result.count === 0 ? copy.noImages : copy.needTwoImages);
+        new Notice(result.count === 0 ? copy.noMedia : copy.needTwoMedia);
         return;
       }
 
@@ -106,7 +111,7 @@ export default class ImageOrderReverserPlugin extends Plugin {
 
       new Notice(copy.reversed(result.count));
     } catch (error) {
-      console.error("Image Order Reverser failed to update the note", error);
+      console.error("Image Order Reverser failed to update the note media", error);
       new Notice(copy.writeFailed);
     }
   }
@@ -137,11 +142,11 @@ export default class ImageOrderReverserPlugin extends Plugin {
     return matchingView;
   }
 
-  private isResolvedWikiImage(linkTarget: string, sourceFile: TFile): boolean {
+  private isResolvedWikiMedia(linkTarget: string, sourceFile: TFile): boolean {
     const destination = this.app.metadataCache.getFirstLinkpathDest(
       linkTarget,
       sourceFile.path
     );
-    return destination instanceof TFile && IMAGE_EXTENSIONS.has(destination.extension.toLowerCase());
+    return destination instanceof TFile && MEDIA_EXTENSIONS.has(destination.extension.toLowerCase());
   }
 }

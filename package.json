@@ -1,9 +1,9 @@
 {
   "name": "obsidian-image-order-reverser",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "main": "main.js",
   "private": true,
-  "description": "Reverse every image embed in the active Obsidian note with one click.",
+  "description": "Reverse image and video embeds together in the active Obsidian note.",
   "author": "Leegent",
   "license": "MIT",
   "repository": {

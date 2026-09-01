@@ -1,9 +1,9 @@
 {
   "id": "image-order-reverser",
   "name": "Image Order Reverser",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "minAppVersion": "1.13.7",
-  "description": "Reverse all image embeds in the active note with one click. Click again to restore the original order.",
+  "description": "Reverse image and video embeds together in the active note. Click again to restore the original order.",
   "author": "Leegent",
   "authorUrl": "https://github.com/leegent",
   "isDesktopOnly": false
